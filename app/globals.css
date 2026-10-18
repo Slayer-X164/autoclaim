@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --font-instrument: var(--font-instrument-sans);
+  --font-inter: var(--font-inter);
+}
+
+/* App-wide responsive safety: keep horizontal overflow inside intentional scrollers. */
+html, body {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  overflow-x: clip;
+}
+body { -webkit-text-size-adjust: 100%; }
+button, a, input, select, textarea { touch-action: manipulation; }
+img, video, canvas, svg { max-width: 100%; }
+input, select, textarea, button { min-width: 0; }
+#__next { min-height: 100%; }
+table { border-collapse: separate; border-spacing: 0; }
+[role="dialog"] {
+  overscroll-behavior: contain;
+}
+[role="dialog"] > * {
+  min-width: 0;
+}
+@media (max-width: 767px) {
+  /* Mobile should use natural document scrolling rather than nested fixed-height panes. */
+  body { overflow-y: auto; }
+  main, section, article, form { min-width: 0; }
+  input, select, textarea { max-width: 100%; font-size: 16px; }
+  table { -webkit-overflow-scrolling: touch; }
+  /* Keep long user-provided names, emails, URLs and IDs from widening the viewport. */
+  p, h1, h2, h3, h4, label, td, th, a, span { overflow-wrap: anywhere; }
+  /* Modals remain usable on short screens and scroll as a whole. */
+  [role="dialog"] { max-height: calc(100dvh - 1rem); }
+  [role="dialog"] > div { max-height: calc(100dvh - 1rem); overflow-y: auto; }
+  /* Reduce large desktop paddings on small screens without changing desktop styling. */
+  .dashboard-content { padding: 1rem !important; }
+}
+@media (max-width: 480px) {
+  .dashboard-content { padding: 0.875rem !important; }
+  button { min-height: 36px; }
+}
