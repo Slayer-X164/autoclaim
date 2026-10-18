@@ -15,6 +15,7 @@ import ActivityCard from "@/component/dashboard/admin/ActivityCard";
 import CustomerInvitationsCard from "@/component/dashboard/admin/CustomerInvitationsCard";
 import AdminReviewersPage from "@/component/dashboard/admin/AdminReviewersPage";
 import AdminSettingsPage from "@/component/dashboard/admin/AdminSettingsPage";
+import { LuCircleCheck, LuClock, LuFiles, LuUsers } from "react-icons/lu";
 
 type Summary = {
   total: number;
@@ -93,50 +94,33 @@ export default function Dashboard() {
         <p className="font-instrument font-regular text-[14px] text-[#475569]">
           Here&apos;s how your organization&apos;s claims operation is doing.
         </p>
-        {activeOrganization?.slug && (
-          <Link
-            href={`/claim/${activeOrganization.slug}`}
-            target="_blank"
-            className="mt-3 inline-flex w-fit items-center gap-2 rounded-lg border border-[#DCE3EC] px-3 py-2 text-sm font-semibold text-[#1F66FF] hover:bg-blue-50"
-          >
-            Open customer claim portal ↗{" "}
-            <span className="font-normal text-slate-500">
-              /claim/{activeOrganization.slug}
-            </span>
-          </Link>
-        )}
+
       </div>
 
-      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:gap-5">
+      <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:gap-5">
         <KpiCard
           title="Total Claims"
-          value={String(summary.total)}
-          iconSrc="/icons/file.svg"
-          borderColor="#1F66FF"
-          iconBgColor="rgba(0, 150, 244, 0.07)"
+          value={summary.total}
+          icon={LuFiles}
+          tint="bg-blue-50 text-[#1F66FF]"
         />
         <KpiCard
           title="Pending Review"
-          value={String(summary.pending)}
-          iconSrc="/icons/clock.svg"
-          borderColor="#FFB120"
-          iconBgColor="rgba(255, 171, 14, 0.15)"
+          value={summary.pending}
+          icon={LuClock}
+          tint="bg-amber-50 text-amber-600"
         />
         <KpiCard
           title="Completed Claims"
-          value={String(
-            summary.approved + summary.rejected + summary.autoApproved,
-          )}
-          iconSrc="/icons/check-circle.svg"
-          borderColor="#00AD45"
-          iconBgColor="rgba(0, 149, 55, 0.07)"
+          value={summary.approved + summary.rejected + summary.autoApproved}
+          icon={LuCircleCheck}
+          tint="bg-emerald-50 text-emerald-600"
         />
         <KpiCard
           title="Active Reviewers"
-          value={String(summary.reviewers)}
-          iconSrc="/icons/users.svg"
-          borderColor="#9A26FF"
-          iconBgColor="rgba(111, 0, 246, 0.07)"
+          value={summary.reviewers}
+          icon={LuUsers}
+          tint="bg-violet-50 text-violet-600"
         />
       </div>
 

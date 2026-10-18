@@ -1,29 +1,24 @@
-import Image from "next/image";
+import type { IconType } from "react-icons";
 
 interface KpiCardProps {
   title: string;
   value: string | number;
-  iconSrc: string;
-  borderColor: string;
-  iconBgColor: string;
+  icon: IconType;
+  tint: string;
 }
 
-export default function KpiCard({ title, value, iconSrc, borderColor, iconBgColor }: KpiCardProps) {
+export default function KpiCard({ title, value, icon: Icon, tint }: KpiCardProps) {
   return (
-    <div 
-      className="flex-1 h-[140px] flex flex-col justify-between p-6 bg-white border rounded-xl"
-      style={{ borderColor }}
-    >
+    <div className="rounded-xl border border-[#E2E8F0] bg-white p-5">
       <div className="flex items-center justify-between">
-        <span className="font-instrument font-semibold text-[14px] text-[#475569]">{title}</span>
-        <div 
-          className="w-8 h-8 rounded-2xl flex items-center justify-center"
-          style={{ backgroundColor: iconBgColor }}
+        <span className="text-sm font-medium text-slate-500">{title}</span>
+        <span
+          className={`flex h-10 w-10 items-center justify-center rounded-lg ${tint}`}
         >
-          <Image src={iconSrc} alt={title} width={16} height={16} />
-        </div>
+          <Icon size={19} />
+        </span>
       </div>
-      <span className="font-sans font-bold text-[40px] text-[#0F172A]">{value}</span>
+      <p className="mt-4 text-3xl font-bold text-[#0F172A]">{value}</p>
     </div>
   );
 }
