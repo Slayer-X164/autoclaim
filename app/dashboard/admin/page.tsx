@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ClaimQueue from "@/component/dashboard/ClaimQueue";
@@ -16,17 +16,46 @@ import CustomerInvitationsCard from "@/component/dashboard/admin/CustomerInvitat
 import AdminReviewersPage from "@/component/dashboard/admin/AdminReviewersPage";
 import AdminSettingsPage from "@/component/dashboard/admin/AdminSettingsPage";
 
-type Summary = { total: number; pending: number; approved: number; rejected: number; processing: number; autoApproved: number; reviewers: number; completedToday: number };
+type Summary = {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  processing: number;
+  autoApproved: number;
+  reviewers: number;
+  completedToday: number;
+};
 
 export default function Dashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tab = searchParams.get("tab") || "dashboard";
   const { data: activeOrganization } = authClient.useActiveOrganization();
-  const [summary, setSummary] = useState<Summary>({ total: 0, pending: 0, approved: 0, rejected: 0, processing: 0, autoApproved: 0, reviewers: 0, completedToday: 0 });
-  useEffect(() => { fetch("/api/claims/summary", { cache: "no-store" }).then((response) => response.ok ? response.json() : null).then((data) => { if (data) setSummary(data); }).catch((error) => console.error("Could not load dashboard summary", error)); }, []);
-  const { data: session, isPending: isSessionPending } = authClient.useSession();
-  const { data: activeMember, isPending: isMemberPending } = authClient.useActiveMember();
+  const [summary, setSummary] = useState<Summary>({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    processing: 0,
+    autoApproved: 0,
+    reviewers: 0,
+    completedToday: 0,
+  });
+  useEffect(() => {
+    fetch("/api/claims/summary", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (data) setSummary(data);
+      })
+      .catch((error) =>
+        console.error("Could not load dashboard summary", error),
+      );
+  }, []);
+  const { data: session, isPending: isSessionPending } =
+    authClient.useSession();
+  const { data: activeMember, isPending: isMemberPending } =
+    authClient.useActiveMember();
   const setUser = useUserStore((state) => state.setUser);
 
   useEffect(() => {
@@ -37,16 +66,18 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!isSessionPending && !isMemberPending) {
-      if (activeMember && activeMember.role !== "admin" && activeMember.role !== "owner") {
+      if (
+        activeMember &&
+        activeMember.role !== "admin" &&
+        activeMember.role !== "owner"
+      ) {
         router.replace("/dashboard/reviewer");
       }
     }
   }, [activeMember, isSessionPending, isMemberPending, router]);
 
   if (isSessionPending || isMemberPending) {
-    return (
-      <CenterLoader text="Loading your workspace..." />
-    );
+    return <CenterLoader text="Loading your workspace..." />;
   }
 
   if (tab === "claims") return <ClaimQueue />;
@@ -56,9 +87,24 @@ export default function Dashboard() {
   return (
     <div className="dashboard-content flex min-w-0 flex-col gap-5 p-4 sm:gap-6 sm:p-6 lg:p-8">
       <div className="flex flex-col gap-1">
-        <h1 className="font-instrument font-bold text-[28px] text-[#0F172A]">Overview</h1>
-        <p className="font-instrument font-regular text-[14px] text-[#475569]">Here&apos;s how your organization&apos;s claims operation is doing.</p>
-        {activeOrganization?.slug && <Link href={`/claim/${activeOrganization.slug}`} target="_blank" className="mt-3 inline-flex w-fit items-center gap-2 rounded-lg border border-[#DCE3EC] px-3 py-2 text-sm font-semibold text-[#1F66FF] hover:bg-blue-50">Open customer claim portal ↗ <span className="font-normal text-slate-500">/claim/{activeOrganization.slug}</span></Link>}
+        <h1 className="font-instrument font-bold text-[28px] text-[#0F172A]">
+          Overview
+        </h1>
+        <p className="font-instrument font-regular text-[14px] text-[#475569]">
+          Here&apos;s how your organization&apos;s claims operation is doing.
+        </p>
+        {activeOrganization?.slug && (
+          <Link
+            href={`/claim/${activeOrganization.slug}`}
+            target="_blank"
+            className="mt-3 inline-flex w-fit items-center gap-2 rounded-lg border border-[#DCE3EC] px-3 py-2 text-sm font-semibold text-[#1F66FF] hover:bg-blue-50"
+          >
+            Open customer claim portal ↗{" "}
+            <span className="font-normal text-slate-500">
+              /claim/{activeOrganization.slug}
+            </span>
+          </Link>
+        )}
       </div>
 
       <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:gap-5">
@@ -78,7 +124,9 @@ export default function Dashboard() {
         />
         <KpiCard
           title="Completed Claims"
-          value={String(summary.approved + summary.rejected + summary.autoApproved)}
+          value={String(
+            summary.approved + summary.rejected + summary.autoApproved,
+          )}
           iconSrc="/icons/check-circle.svg"
           borderColor="#00AD45"
           iconBgColor="rgba(0, 149, 55, 0.07)"
