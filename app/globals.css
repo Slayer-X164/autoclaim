@@ -16,6 +16,8 @@ body { -webkit-text-size-adjust: 100%; }
 button, a, input, select, textarea { touch-action: manipulation; }
 img, video, canvas, svg { max-width: 100%; }
 input, select, textarea, button { min-width: 0; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
 #__next { min-height: 100%; }
 table { border-collapse: separate; border-spacing: 0; }
 [role="dialog"] {
