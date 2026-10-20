@@ -1,9 +1,6 @@
 
-import { PDFParse } from "pdf-parse";
-
 /**
  * Extract text from a text-based PDF.
- *
  * Scanned/image-only PDFs may return no text and require OCR.
  * Returns extracted text capped at maxChars.
  */
@@ -11,9 +8,14 @@ export async function extractPdfTextBestEffort(
   bytes: Buffer,
   maxChars = 12000,
 ): Promise<string> {
-  let parser: PDFParse | undefined;
+  let parser:
+    | import("pdf-parse").PDFParse
+    | undefined;
 
   try {
+    // Load PDF.js only when a PDF needs to be parsed.
+    const { PDFParse } = await import("pdf-parse");
+
     parser = new PDFParse({
       data: new Uint8Array(bytes),
     });
