@@ -1,4 +1,3 @@
-
 type EvidenceForAnalysis = {
   fileName: string;
   mimeType: string;
@@ -50,10 +49,7 @@ function rulesBasedAnalysis(
 
   const accident = new Date(`${claim.accidentDate}T00:00:00Z`);
 
-  if (
-    !Number.isNaN(accident.getTime()) &&
-    accident.getTime() > Date.now()
-  ) {
+  if (!Number.isNaN(accident.getTime()) && accident.getTime() > Date.now()) {
     flags.push("Accident date is in the future");
   }
 
@@ -61,26 +57,21 @@ function rulesBasedAnalysis(
     flags.push("Registration number format should be verified");
   }
 
-  const images = evidence.filter((file) =>
-    file.mimeType.startsWith("image/"),
-  );
+  const images = evidence.filter((file) => file.mimeType.startsWith("image/"));
 
   if (images.length > 0) {
-    flags.push(
-      "Image authenticity warning: AI authenticity verification has not been performed by the rules-based fallback; manually verify the submitted images.",
+    const metadataUnavailable = images.some(
+      (file) =>
+        file.metadataStatus === "missing" ||
+        file.metadataStatus === "unavailable" ||
+        !file.metadataStatus,
     );
 
-    if (images.some((file) => file.metadataStatus === "missing")) {
-      flags.push(
-        "Image metadata is missing; original capture details could not be verified. Missing metadata alone does not prove manipulation.",
-      );
-    }
-
-    if (images.some((file) => file.metadataStatus === "unavailable")) {
-      flags.push(
-        "Image metadata could not be checked; verify the original files if needed.",
-      );
-    }
+    flags.push(
+      metadataUnavailable
+        ? "Image review: original capture metadata is missing or unavailable; image authenticity has not been independently verified."
+        : "Image review: authenticity has not been independently verified.",
+    );
   }
 
   return {
@@ -148,24 +139,26 @@ IMPORTANT LIMITATIONS
 - Clearly distinguish visible observations from suspicion and unverified information.
 - Never declare fraud solely because an image is suspicious or metadata is absent.
 
-REQUIRED IMAGE WARNING
-There are ${imageEvidence.length} image(s) attached to this claim.
 
-If at least one image is attached, ALWAYS include at least one explicit image-authenticity warning in riskFlags.
+IMAGE RISK FLAG RULE
 
-Choose the most accurate warning:
-- If an image visibly appears to be a screenshot:
-  "Image authenticity warning: one or more submitted images appear to be screenshots rather than original photographs; request original files for verification."
-- If there are visible indicators of possible manipulation:
-  "Image authenticity warning: possible image manipulation indicators detected; manual verification is required."
-- If authenticity cannot be established:
-  "Image authenticity warning: image authenticity and original capture details cannot be fully verified by AI; manually verify the evidence."
-- If no obvious suspicious indicators are visible:
-  "Image authenticity warning: no obvious manipulation indicators identified, but authenticity has not been independently verified."
+Return at most ONE risk flag for image authenticity, image manipulation,
+screenshots, and metadata limitations combined.
 
-Use more than one warning if multiple conditions apply. Do not accuse the customer of fraud without supporting evidence.
+- If a screenshot or possible manipulation indicator is observed, mention
+  the specific observation in the single image-related flag.
+- If metadata is missing or unavailable, mention that limitation in the
+  same flag when relevant.
+- If no suspicious visual indicators are observed, do not invent any.
+  State that authenticity has not been independently verified only when
+  relevant to the assessment.
+- Do not create separate generic warnings for authenticity, metadata,
+  device information, and original capture details.
+- Keep image-related observations separate from other substantive findings,
+  such as policy mismatches, missing documents, claimant-name mismatches,
+  and inconsistencies between the reported accident and visible damage.
+- Missing metadata alone does not establish manipulation or fraud.
 
-If metadataStatus is "missing", state that metadata is missing and original capture details could not be verified. If metadataStatus is "unavailable", state that metadata could not be checked. If metadataStatus is "present", do not assume the metadata is genuine or proves authenticity.
 
 CLAIM REVIEW
 - Compare the reported incident with the visible damage and supplied vehicle information.
@@ -218,10 +211,7 @@ Remember: visual inspection is not forensic authentication. Separate visible obs
   ];
 
   for (const file of evidence) {
-    if (
-      file.mimeType.startsWith("image/") &&
-      file.dataUrl.length < 3_000_000
-    ) {
+    if (file.mimeType.startsWith("image/") && file.dataUrl.length < 3_000_000) {
       content.push({
         type: "text",
         text: `Inspect this submitted image individually.
@@ -280,35 +270,90 @@ Assess visible screenshot indicators, possible manipulation, damage consistency,
 
     // Enforce the image warning in application code rather than relying
     // exclusively on the model to follow the prompt.
+
+    // Consolidate image authenticity and metadata warnings into one flag.
     if (imageEvidence.length > 0) {
-      const hasAuthenticityWarning = riskFlags.some((flag) =>
-        /image authenticity warning/i.test(flag),
+      const imageFlagPattern =
+        /image authenticity|authenticity warning|metadata|exif|original capture|screenshot|manipulation|forensic|device information|capture details/i;
+
+      const imageFlags = riskFlags.filter((flag) =>
+        imageFlagPattern.test(flag),
       );
 
-      if (!hasAuthenticityWarning) {
-        riskFlags.unshift(
-          "Image authenticity warning: authenticity has not been independently verified; manually verify the submitted images.",
+      const nonImageFlags = riskFlags.filter(
+        (flag) => !imageFlagPattern.test(flag),
+      );
+
+      if (imageFlags.length > 0) {
+        const combinedDetails = imageFlags
+          .map((flag) =>
+            flag
+              .replace(/^image authenticity warning:\s*/i, "")
+              .replace(
+                /^metadata (?:unavailable|is missing|could not be checked)[^:]*:\s*/i,
+                "",
+              )
+              .trim()
+              .replace(/[.;,\s]+$/, ""),
+          )
+          .filter(Boolean);
+
+        const uniqueDetails = [...new Set(combinedDetails)];
+
+        // Prefer one concise message rather than repeating generic warnings.
+        const hasSpecificConcern = imageFlags.some((flag) =>
+          /appear to be screenshots|possible image manipulation|manipulation indicators/i.test(
+            flag,
+          ),
+        );
+
+        const hasMetadataLimitation = imageEvidence.some(
+          (file) =>
+            file.metadataStatus === "missing" ||
+            file.metadataStatus === "unavailable" ||
+            !file.metadataStatus,
+        );
+
+        let consolidatedFlag: string;
+
+        if (hasSpecificConcern) {
+          const specificDetails = uniqueDetails
+            .filter((detail) =>
+              /screenshot|manipulation|lighting|shadows|compositing|cloning/i.test(
+                detail,
+              ),
+            )
+            .slice(0, 2);
+
+          consolidatedFlag =
+            "Image review: " +
+            (specificDetails.length
+              ? specificDetails.join("; ")
+              : "potential authenticity concern requires manual verification");
+
+          if (hasMetadataLimitation) {
+            consolidatedFlag +=
+              "; original capture metadata could not be fully verified";
+          }
+
+          consolidatedFlag += ".";
+        } else if (hasMetadataLimitation) {
+          consolidatedFlag =
+            "Image review: original capture metadata is missing or unavailable; image authenticity has not been independently verified.";
+        } else {
+          consolidatedFlag =
+            uniqueDetails.length > 0
+              ? `Image review: ${uniqueDetails[0]}.`
+              : "Image review: no specific authenticity concern was identified.";
+        }
+
+        riskFlags.splice(
+          0,
+          riskFlags.length,
+          ...nonImageFlags,
+          consolidatedFlag,
         );
       }
-    }
-
-    // Missing or unavailable metadata should always be visible to reviewers.
-    if (
-      imageEvidence.some((file) => file.metadataStatus === "missing") &&
-      !riskFlags.some((flag) => /metadata is missing/i.test(flag))
-    ) {
-      riskFlags.push(
-        "Image metadata is missing; original capture details could not be verified. Missing metadata alone does not prove manipulation.",
-      );
-    }
-
-    if (
-      imageEvidence.some((file) => file.metadataStatus === "unavailable") &&
-      !riskFlags.some((flag) => /metadata could not be checked/i.test(flag))
-    ) {
-      riskFlags.push(
-        "Image metadata could not be checked; original capture details remain unverified.",
-      );
     }
 
     return {
